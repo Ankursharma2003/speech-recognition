@@ -1,10 +1,10 @@
 {
   "version": 2,
   "builds": [
-    { "src": "manage.py", "use": "@vercel/python" }
+    { "src": "SR_BY_ANKUR/wsgi.py", "use": "@vercel/python" }
   ],
   "routes": [
     { "src": "/static/(.*)", "dest": "/static/$1" },
-    { "src": "/(.*)", "dest": "manage.py" }
+    { "src": "/(.*)", "dest": "SR_BY_ANKUR/wsgi.py" }
   ]
 }
