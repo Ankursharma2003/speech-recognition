@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capture and Analyze</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #eef2f3;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        h2, h3 {
+            color: #4a90e2;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        video {
+            border: 3px solid #4a90e2;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+            margin-top:300px;
+            max-width: 100%;
+            transform: rotateX(8deg); /* Slight downward tilt */
+            transform-origin: center top;
+        }
+        canvas {
+            border: 3px solid #4a90e2;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+            margin-top:300px;
+            max-width: 100%;
+            display: none;
+        }
+        button {
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            margin: 10px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        button:hover {
+            background-color: #357ab8;
+            transform: scale(1.05);
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        #results {
+            margin-top: 20px;
+            background-color: #ffffff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s ease;
+        }
+        #results p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #555;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        @media (max-width: 600px) {
+            .container {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Capture Your Photo</h2>
+        <video id="video" width="320" height="240" autoplay></video>
+        <button id="capture">Capture Photo</button>
+        
+        <canvas id="canvas" width="320" height="240"></canvas>
+        
+        <form id="infoForm" class="fade-in">
+            <label for="gender">Gender:</label>
+            <input type="text" id="gender" readonly>
+            <label for="age">Age:</label>
+            <input type="text" id="age" readonly>
+            <label for="emotion">Emotion:</label>
+            <input type="text" id="emotion" readonly>
+            <label for="race">Race:</label>
+            <input type="text" id="race" readonly>
+        </form>
+    </div>
+
+    <div class="container">
+        <h2>Speech Recognition</h2>
+        <button id="speakButton">Speak</button>
+        <div id="results" class="fade-in">
+            <h3>Results:</h3>
+            <p id="recognizedText"></p>
+            <p id="detectedGender"></p>
+            <p id="audioFrequency"></p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('speakButton').addEventListener('click', () => {
+            fetch('/speech-to-text/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('recognizedText').innerText = "You said: " + data.text;
+                document.getElementById('detectedGender').innerText = "Detected Gender: " + data.gender;
+                document.getElementById('audioFrequency').innerText = "Audio Frequency: " + data.frequency + " Hz";
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('recognizedText').innerText = "Error occurred while processing audio.";
+            });
+        });
+
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureButton = document.getElementById('capture');
+        let mediaStream;
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                mediaStream = stream;
+                video.srcObject = stream;
+            })
+            .catch(err => {
+                console.error("Error accessing the webcam: " + err);
+            });
+
+        captureButton.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.style.display = 'block';
+
+            const imageData = canvas.toDataURL('image/png');
+
+            fetch('/detect/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ image: imageData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('gender').value = data.gender;
+                document.getElementById('age').value = data.age;
+                document.getElementById('emotion').value = data.emotion;
+                document.getElementById('race').value = data.race;
+
+                video.style.display = 'none';
+                captureButton.style.display = 'none';
+
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(track => track.stop());
+                }
+                alert('Detection complete! Age: ' + data.age + ', Gender: ' + data.gender + ', Emotion: ' + data.emotion);
+                
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
