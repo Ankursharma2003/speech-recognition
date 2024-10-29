@@ -1,8 +1,8 @@
 {
-    
+    "version": 2,
     "routes": [
       
-      { "src": "/(.*)", "dest": "SR_BY_ANKUR/wsgi.py" }
+      { "src": "/(.*)", "dest": "manage.py" }
     ]
     
   }
