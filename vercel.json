@@ -1,9 +1,5 @@
 {
     
-    "builds": [
-      { "src": "SR_BY_ANKUR/wsgi.py",
-       "use": "@vercel/python" }
-    ],
     "routes": [
       
       { "src": "/(.*)", "dest": "SR_BY_ANKUR/wsgi.py" }
